@@ -43,21 +43,21 @@ struct VEBTree : AbstractVEBTree<S>
 			{
 				vebmax = x;
 			}
-			unsigned long long hi = x >> (S / 2);
-			unsigned long long lo = x & ((1ULL << S / 2) - 1);
-			if (child[hi] == NULL)
-			{
-				child[hi] = new VEBTree<S / 2>();
-			}
-			if (child[hi]->vebmin == NO)
-			{
-				if (aux == NULL)
+				unsigned long long hi = x >> (S / 2);
+				unsigned long long lo = x & ((1ULL << S / 2) - 1);
+				if (child[hi] == NULL)
 				{
-					aux = new VEBTree<S / 2>();
+					child[hi] = new VEBTree<S / 2>();
 				}
-				aux->add(hi);
-			}
-			child[hi]->add(lo);
+				if (child[hi]->vebmin == NO)
+				{
+					if (aux == NULL)
+					{
+						aux = new VEBTree<S / 2>();
+					}
+					aux->add(hi);
+				}
+				child[hi]->add(lo);
 		}
 	}
 
@@ -81,10 +81,6 @@ struct VEBTree : AbstractVEBTree<S>
 		{
 			return NO;
 		}
-		if (S == 1)
-		{
-			return NO;
-		}
 		unsigned long long hi, lo;
 		hi = x >> (S / 2), lo = x & ((1ULL << S / 2) - 1);
 		if (child[hi] != NULL && lo < child[hi]->getMax())
@@ -103,44 +99,130 @@ struct VEBTree : AbstractVEBTree<S>
 		return NO;
 	}
 
-	unsigned long long prev(unsigned long long x)
+	unsigned long long prev(unsigned long long x) const
 	{
 		if (x > vebmax)
 		{
 			return vebmax;
 		}
-		if (vebmin == NO || x < vebmin)
+		if (vebmin == NO || x <= vebmin)
 		{
 			return NO;
 		}
+		unsigned long long hi, lo, res;
+		hi = x >> S / 2, lo = x & ((1 << S / 2) - 1);
+		if (child[hi] != NULL && lo > child[hi]->getMin())
+		{
+			unsigned long long half2 = child[hi]->prev(lo);
+			return (hi << S / 2) + half2;
+		}
+		else if (aux != NULL)
+		{
+			unsigned long long half1 = aux->prev(hi);
+			if (half1 != NO)
+			{
+				return (half1 << S / 2) + child[half1]->getMax();
+			}
+		}
+		return vebmin;
+	}
 
+	void remove(unsigned long long x)
+	{
+		unsigned long long hi, lo;
+		unsigned int k = S;
+		if (x == vebmax)
+		{
+			vebmax = this->prev(vebmax);
+		}
+		if (x == vebmin)
+		{
+			this->getMin();
+			if (aux == NULL || aux->vebmin == NO)
+			{
+				vebmin = NO;
+				return;
+			}
+			hi = aux->getMin(), lo = child[hi]->getMin();
+			vebmin = (hi << S / 2) + lo;
+		}
+		else
+		{
+			hi = x >> S / 2, lo = x & ((1ULL << S / 2) - 1);
+		}
+		child[hi]->remove(lo);
+		if (child[hi]->vebmin == NO)
+		{
+			aux->remove(hi);
+		}
 	}
 };
 
-/*template<> 
-struct VEBTree<1> : AbstractVEBTree<1> 
+
+template<>
+struct VEBTree<1> : AbstractVEBTree<1>
 {
+	unsigned long long vebmin, vebmax;
+
 	void add(unsigned long long x)
 	{
 
 	}
-	unsigned long long next(unsigned long long x)
+	unsigned long long next(unsigned long long x) const
 	{
-		return vebmax == x ? vebmax : NO;
+		if (x < vebmin)
+		{
+			return vebmin;
+		}
+		if (vebmin == NO || x >= vebmax)
+		{
+			return NO;
+		}
+		return vebmax;
 	}
-};*/
+	unsigned long long prev(unsigned long long x) const
+	{
+		if (x > vebmax)
+		{
+			return vebmax;
+		}
+		if (vebmin == NO || x <= vebmin)
+		{
+			return NO;
+		}
+		return vebmin;
+	}
+	unsigned long long getMin() const
+	{
+		return vebmin;
+	}
+	unsigned long long getMax() const
+	{
+		return vebmax;
+	}
+
+	void remove(unsigned long long)
+	{
+		vebmin = vebmax = NO;
+	}
+};
+
 
 int main()
 {
-	VEBTree<8> tree;
-	tree.add(5);
-	tree.add(3);
-	tree.add(7);
-	tree.add(2);
-	tree.add(14);
-	cout << tree.getMin() << ' ' << tree.getMax() << "\n";
-	cout << tree.next(4);
-	int n;
-	cin >> n;
+	VEBTree<16> t;
+	t.add(1);
+	t.add(17);
+	t.add(389);
+	t.add(5);
+	t.add(144);
+	cout << t.prev(6) << "\n";
+	t.remove(17);
+	cout << t.prev(144) << "\n";
+	t.remove(389);
+	cout << t.getMax() << "\n";
+	system("pause");
+	/*int n;
+	cin >> n;*/
 	return 0;
 }
