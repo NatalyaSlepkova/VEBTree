@@ -1,11 +1,28 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "veb.h"
+#include <string>
+//#include "veb.h"
 #include <algorithm>
 #include <memory.h>
 
 using namespace std;
+
+unsigned long long const NO = -1;
+
+template<unsigned int S>
+class AbstractVEBTree {
+public:
+	virtual void add(unsigned long long x) = 0;
+	virtual void remove(unsigned long long x) = 0;
+	virtual unsigned long long next(unsigned long long x) const = 0;
+	virtual unsigned long long prev(unsigned long long x) const = 0;
+	virtual unsigned long long getMin() const = 0;
+	virtual unsigned long long getMax() const = 0;
+};
+
+template<unsigned int S>
+struct VEBTree;
 
 template <unsigned int S>
 struct VEBTree : AbstractVEBTree<S>
@@ -13,7 +30,7 @@ struct VEBTree : AbstractVEBTree<S>
 	unsigned long long vebmin, vebmax;
 	VEBTree<(S / 2)> *child[1ULL << S / 2], *aux;
 
-	VEBTree() : vebmin(NO), aux(NULL)
+	VEBTree() : vebmin(NO), vebmax(NO), aux(NULL)
 	{
 		memset(child, 0, sizeof(child));
 	}
@@ -43,6 +60,8 @@ struct VEBTree : AbstractVEBTree<S>
 			{
 				vebmax = x;
 			}
+			if (S != 1)
+			{
 				unsigned long long hi = x >> (S / 2);
 				unsigned long long lo = x & ((1ULL << S / 2) - 1);
 				if (child[hi] == NULL)
@@ -58,6 +77,7 @@ struct VEBTree : AbstractVEBTree<S>
 					aux->add(hi);
 				}
 				child[hi]->add(lo);
+			}
 		}
 	}
 
@@ -70,7 +90,7 @@ struct VEBTree : AbstractVEBTree<S>
 	{
 		return vebmax;
 	}
-	
+
 	unsigned long long next(unsigned long long x) const
 	{
 		if (x < vebmin)
@@ -101,6 +121,8 @@ struct VEBTree : AbstractVEBTree<S>
 
 	unsigned long long prev(unsigned long long x) const
 	{
+		unsigned int k = S;
+		this->getMin();
 		if (x > vebmax)
 		{
 			return vebmax;
@@ -163,11 +185,30 @@ template<>
 struct VEBTree<1> : AbstractVEBTree<1>
 {
 	unsigned long long vebmin, vebmax;
+	VEBTree<1> *aux;
+	VEBTree() : vebmin(NO), vebmax(NO), aux(NULL)
+	{
+	}
 
 	void add(unsigned long long x)
 	{
-
+		if (vebmin == NO)
+		{
+			vebmin = vebmax = x;
+		}
+		else
+		{
+			if (x < vebmin)
+			{
+				swap(x, vebmin);
+			}
+			if (x > vebmax)
+			{
+				vebmax = x;
+			}
+		}
 	}
+
 	unsigned long long next(unsigned long long x) const
 	{
 		if (x < vebmin)
@@ -210,19 +251,46 @@ struct VEBTree<1> : AbstractVEBTree<1>
 
 int main()
 {
+	ifstream cin("vebtree.in");
+	ofstream cout("vebtree.out");
+	int n;
+	cin >> n;
+
 	VEBTree<16> t;
-	t.add(1);
-	t.add(17);
-	t.add(389);
-	t.add(5);
-	t.add(144);
-	cout << t.prev(6) << "\n";
-	t.remove(17);
-	cout << t.prev(144) << "\n";
-	t.remove(389);
-	cout << t.getMax() << "\n";
-	system("pause");
-	/*int n;
-	cin >> n;*/
+	for (int i = 0; i < n; i++)
+	{
+		string st;
+		cin >> st;
+		unsigned long long x;
+		if (st == "A")
+		{
+			cin >> x;
+			t.add(x);
+		}
+		else if (st == "R")
+		{
+			cin >> x;
+			t.remove(x);
+		}
+		else if (st == "N")
+		{
+			cin >> x;
+			cout << t.next(x) << "\n";
+		}
+		else if (st == "P")
+		{
+			cin >> x;
+			cout << t.prev(x) << "\n";
+		}
+		else if (st == "min")
+		{
+			cout << t.getMin() << "\n";
+		}
+		else if (st == "max")
+		{
+			cout << t.getMax() << "\n";
+		}
+	}
+	//system("pause");
 	return 0;
 }
