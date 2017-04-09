@@ -3,9 +3,9 @@ Van Emde Boas tree
 ___
 Implemented:
 
-        * Method add(x)
-        * Method remove(x)
-        * Function next(x)
-        * Function prev(v)
-        * Function getMin()
-        * Function getMax()
+* method *add(x)*
+* method *remove(x)*
+* function *next(x)*
+* function *prev(v)*
+* function *getMin()*
+* function *getMax()*
