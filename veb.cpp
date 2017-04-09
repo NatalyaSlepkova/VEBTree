@@ -5,6 +5,7 @@
 //#include "veb.h"
 #include <algorithm>
 #include <memory.h>
+#include <unordered_map>
 
 using namespace std;
 
@@ -28,20 +29,23 @@ template <unsigned int S>
 struct VEBTree : AbstractVEBTree<S>
 {
 	unsigned long long vebmin, vebmax;
-	VEBTree<(S / 2)> *child[1ULL << S / 2], *aux;
+	unordered_map <unsigned long long, VEBTree<(S / 2)>*> child;
+	VEBTree<(S / 2)>* aux;
 
-	VEBTree() : vebmin(NO), vebmax(NO), aux(NULL)
-	{
-		memset(child, 0, sizeof(child));
-	}
+	VEBTree() : vebmin(NO), vebmax(NO), aux(NULL) {}
 
 	~VEBTree()
 	{
 		delete aux;
-		for (unsigned long long i = 0; i < (1ULL << S / 2); i++)
+		/*for (unsigned long long i = 0; i < (1ULL << S / 2); i++)
 		{
 			delete child[i];
+		}*/
+		for (auto& it : child)
+		{
+			delete child[it.first];
 		}
+		//child.clear();
 	}
 
 	void add(unsigned long long x)
@@ -64,11 +68,11 @@ struct VEBTree : AbstractVEBTree<S>
 			{
 				unsigned long long hi = x >> (S / 2);
 				unsigned long long lo = x & ((1ULL << S / 2) - 1);
-				if (child[hi] == NULL)
+				if (child.count(hi) == 0)
 				{
 					child[hi] = new VEBTree<S / 2>();
 				}
-				if (child[hi]->vebmin == NO)
+				if (child.count(hi) == 0 || child.at(hi)->vebmin == NO)
 				{
 					if (aux == NULL)
 					{
@@ -93,7 +97,7 @@ struct VEBTree : AbstractVEBTree<S>
 
 	unsigned long long next(unsigned long long x) const
 	{
-		this->getMax();
+		//this->getMax();
 		if (x < vebmin)
 		{
 			return vebmin;
@@ -104,9 +108,9 @@ struct VEBTree : AbstractVEBTree<S>
 		}
 		unsigned long long hi, lo;
 		hi = x >> (S / 2), lo = x & ((1ULL << S / 2) - 1);
-		if (child[hi] != NULL && lo < child[hi]->getMax() && child[hi]->getMax() != NO)
+		if (child.count(hi) > 0 && lo < child.at(hi)->getMax() && child.at(hi)->getMax() != NO)
 		{
-			unsigned long long half2 = child[hi]->next(lo);
+			unsigned long long half2 = child.at(hi)->next(lo);
 			return (hi << S / 2) + half2;
 		}
 		else if (aux != NULL)
@@ -114,7 +118,7 @@ struct VEBTree : AbstractVEBTree<S>
 			unsigned long long half1 = aux->next(hi);
 			if (half1 != NO)
 			{
-				return (half1 << S / 2) + child[half1]->getMin();
+				return (half1 << S / 2) + child.at(half1)->getMin();
 			}
 		}
 		return NO;
@@ -134,9 +138,10 @@ struct VEBTree : AbstractVEBTree<S>
 		}
 		unsigned long long hi, lo, res;
 		hi = x >> S / 2, lo = x & ((1 << S / 2) - 1);
-		if (child[hi] != NULL && lo > child[hi]->getMin())
+		if (child.count(hi) > 0 && lo > child.at(hi)->getMin() && child.at(hi)->getMin() != NO)
 		{
-			unsigned long long half2 = child[hi]->prev(lo);
+			VEBTree<S / 2>* temp = child.at(hi);
+			unsigned long long half2 = temp->prev(lo);
 			return (hi << S / 2) + half2;
 		}
 		else if (aux != NULL)
@@ -144,7 +149,7 @@ struct VEBTree : AbstractVEBTree<S>
 			unsigned long long half1 = aux->prev(hi);
 			if (half1 != NO)
 			{
-				return (half1 << S / 2) + child[half1]->getMax();
+				return (half1 << S / 2) + child.at(half1)->getMax();
 			}
 		}
 		return vebmin;
@@ -160,28 +165,28 @@ struct VEBTree : AbstractVEBTree<S>
 		}
 		if (x == vebmin)
 		{
-			this->getMin();
+			//this->getMin();
 			if (aux == NULL || aux->vebmin == NO)
 			{
 				vebmin = vebmax = NO;
 				return;
 			}
-			hi = aux->getMin(), lo = child[hi]->getMin();
+			hi = aux->getMin(), lo = child.at(hi)->getMin();
 			vebmin = (hi << S / 2) + lo;
 		}
 		else
 		{
 			hi = x >> S / 2, lo = x & ((1ULL << S / 2) - 1);
 		}
-		child[hi]->remove(lo);
-		if (child[hi]->vebmin == NO)
+		child.at(hi)->remove(lo);
+		if (child.at(hi)->vebmin == NO)
 		{
-			//delete child[hi];
+			child.erase(hi);
 			aux->remove(hi);
 		}
 	}
 
-	vector <unsigned long long> go(unsigned long long hi)
+	/*vector <unsigned long long> go(unsigned long long hi)
 	{
 		vector <unsigned long long> res;
 		res.clear();
@@ -207,7 +212,7 @@ struct VEBTree : AbstractVEBTree<S>
 			res[i] = (hi << S) + res[i];
 		}
 		return res;
-	}
+	}*/
 };
 
 
@@ -287,12 +292,12 @@ struct VEBTree<1> : AbstractVEBTree<1>
 			vebmax = vebmin;
 		}
 	}
-	vector <unsigned long long> go(unsigned long long hi)
+	/*vector <unsigned long long> go(unsigned long long hi)
 	{
 		vector <unsigned long long> res;
 		res.push_back((hi << 1) + vebmin);
 		return res;
-	}
+	}*/
 };
 
 
