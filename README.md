@@ -2,6 +2,7 @@
 Van Emde Boas tree
 ___
 Implemented:
+
         * method add(x)
         * method remove(x)
         * function next(x)
