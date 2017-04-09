@@ -93,6 +93,7 @@ struct VEBTree : AbstractVEBTree<S>
 
 	unsigned long long next(unsigned long long x) const
 	{
+		this->getMax();
 		if (x < vebmin)
 		{
 			return vebmin;
@@ -103,7 +104,7 @@ struct VEBTree : AbstractVEBTree<S>
 		}
 		unsigned long long hi, lo;
 		hi = x >> (S / 2), lo = x & ((1ULL << S / 2) - 1);
-		if (child[hi] != NULL && lo < child[hi]->getMax())
+		if (child[hi] != NULL && lo < child[hi]->getMax() && child[hi]->getMax() != NO)
 		{
 			unsigned long long half2 = child[hi]->next(lo);
 			return (hi << S / 2) + half2;
@@ -162,7 +163,7 @@ struct VEBTree : AbstractVEBTree<S>
 			this->getMin();
 			if (aux == NULL || aux->vebmin == NO)
 			{
-				vebmin = NO;
+				vebmin = vebmax = NO;
 				return;
 			}
 			hi = aux->getMin(), lo = child[hi]->getMin();
@@ -175,8 +176,37 @@ struct VEBTree : AbstractVEBTree<S>
 		child[hi]->remove(lo);
 		if (child[hi]->vebmin == NO)
 		{
+			//delete child[hi];
 			aux->remove(hi);
 		}
+	}
+
+	vector <unsigned long long> go(unsigned long long hi)
+	{
+		vector <unsigned long long> res;
+		res.clear();
+		res.push_back(this->vebmin);
+		unsigned long long i = 0;
+		if (S != 1)
+		{
+			while (i < (1ULL << S / 2))
+			{
+				if (child[i] != NULL && child[i]->vebmin != NO)
+				{
+					vector <unsigned long long> kids = child[i]->go(i);
+					for (int j = 0; j < kids.size(); j++)
+					{
+						res.push_back(kids[j]);
+					}
+				}
+				++i;
+			}
+		}
+		for (int i = 0; i < res.size(); i++)
+		{
+			res[i] = (hi << S) + res[i];
+		}
+		return res;
 	}
 };
 
@@ -242,9 +272,26 @@ struct VEBTree<1> : AbstractVEBTree<1>
 		return vebmax;
 	}
 
-	void remove(unsigned long long)
+	void remove(unsigned long long x)
 	{
-		vebmin = vebmax = NO;
+		if (vebmin == vebmax)
+		{
+			vebmin = vebmax = NO;
+		}
+		else if (x == vebmin)
+		{
+			vebmin = vebmax;
+		}
+		else
+		{
+			vebmax = vebmin;
+		}
+	}
+	vector <unsigned long long> go(unsigned long long hi)
+	{
+		vector <unsigned long long> res;
+		res.push_back((hi << 1) + vebmin);
+		return res;
 	}
 };
 
@@ -261,7 +308,8 @@ int main()
 	{
 		string st;
 		cin >> st;
-		unsigned long long x;
+		//cerr << i << ' ';
+		unsigned long long x, ans;
 		if (st == "A")
 		{
 			cin >> x;
@@ -272,25 +320,41 @@ int main()
 			cin >> x;
 			t.remove(x);
 		}
-		else if (st == "N")
+		else
 		{
-			cin >> x;
-			cout << t.next(x) << "\n";
+			if (st == "N")
+			{
+				cin >> x;
+				ans = t.next(x);
+			}
+			else if (st == "P")
+			{
+				cin >> x;
+				ans = t.prev(x);
+			}
+			else if (st == "min")
+			{
+				ans = t.getMin();
+			}
+			else if (st == "max")
+			{
+				ans = t.getMax();
+			}
+			ans = (ans == NO ? 0 : ans);
+			cout << ans << "\n";
 		}
-		else if (st == "P")
+		//cout << "\n";
+		/*cerr << st << ' ' << x << " : ";
+		if (t.aux != NULL)
 		{
-			cin >> x;
-			cout << t.prev(x) << "\n";
+			vector <unsigned long long> v = t.aux->go(0);
+			for (int j = 0; j < v.size(); j++)
+			{
+				cerr << v[j] << ' ';
+			}
 		}
-		else if (st == "min")
-		{
-			cout << t.getMin() << "\n";
-		}
-		else if (st == "max")
-		{
-			cout << t.getMax() << "\n";
-		}
+		cerr << "\n";*/
 	}
-	//system("pause");
+
 	return 0;
 }
