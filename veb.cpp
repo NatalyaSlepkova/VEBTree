@@ -121,7 +121,7 @@ struct VEBTree : AbstractVEBTree<S>
 			return NO;
 		}
 		unsigned long long hi, lo, res;
-		hi = x >> S / 2, lo = x & ((1 << S / 2) - 1);
+		hi = x >> S / 2, lo = x & ((1ULL << S / 2) - 1);
 		if (child.count(hi) > 0 && lo > child.at(hi)->getMin() && child.at(hi)->getMin() != NO)
 		{
 			VEBTree<S / 2>* temp = child.at(hi);
@@ -168,6 +168,21 @@ struct VEBTree : AbstractVEBTree<S>
 			child.erase(hi);
 			aux->remove(hi);
 		}
+	}
+
+	bool find(unsigned long long x)
+	{
+		if (x == vebmin)
+		{
+			return true;
+		}
+		unsigned long long hi, lo;
+		hi = x >> S / 2, lo = x & ((1ULL << S / 2) - 1);
+		if (child.count(hi) > 0)
+		{
+			return child.at(hi)->find(lo);
+		}
+		return false;
 	}
 
 	/*vector <unsigned long long> go(unsigned long long hi)
@@ -276,6 +291,14 @@ struct VEBTree<1> : AbstractVEBTree<1>
 			vebmax = vebmin;
 		}
 	}
+
+	bool find(unsigned long long x)
+	{
+		if (x == vebmin || x == vebmax)
+			return true;
+		return false;
+	}
+
 	/*vector <unsigned long long> go(unsigned long long hi)
 	{
 		vector <unsigned long long> res;
@@ -292,7 +315,7 @@ int main()
 	int n;
 	cin >> n;
 
-	VEBTree<16> t;
+	VEBTree<64> t;
 	for (int i = 0; i < n; i++)
 	{
 		string st;
@@ -307,18 +330,24 @@ int main()
 		else if (st == "R")
 		{
 			cin >> x;
-			t.remove(x);
+			if (t.find(x))
+			{
+				t.remove(x);
+			}
 		}
 		else
 		{
+			//cout << st << ' ';
 			if (st == "N")
 			{
 				cin >> x;
+				//cout << x << ' ';
 				ans = t.next(x);
 			}
 			else if (st == "P")
 			{
 				cin >> x;
+				//cout << x << ' ';
 				ans = t.prev(x);
 			}
 			else if (st == "min")
